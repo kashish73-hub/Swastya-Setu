@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swastya Setu – Smart Healthcare Assistance Platform</title>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="description" content="Swastya Setu – find nearby hospitals & pharmacies, check symptoms, and reach 108/112 fast in India.">
+  <meta name="theme-color" content="#1E88E5">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div style="background:#FFF8E1;color:#5D4037;font-size:.8rem;padding:6px 12px;text-align:center">Swastya Setu gives general information only – not a diagnosis. In emergency call <a href="tel:112"><b>112</b></a> / <a href="tel:108"><b>108</b></a>.</div>
+
+  <!-- App Header -->
+  <header class="app-header glass-nav">
+    <div class="brand-logo">
+      <i class="fa-solid fa-heart-pulse"></i>
+      <span>Swastya <span style="color: var(--accent);">Setu</span></span>
+    </div>
+
+    <nav class="nav-links">
+      <a class="nav-link active" onclick="switchView('view-landing')">Home</a>
+      <a class="nav-link" onclick="switchView('view-disease-prediction')">AI Diagnostics</a>
+      <a class="nav-link" onclick="switchView('view-hospital-locator')">Hospitals</a>
+      <a class="nav-link" onclick="switchView('view-pharmacy-locator')">Pharmacies</a>
+      <a class="nav-link" onclick="switchView('view-ambulance-module')">Ambulance</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn btn-danger btn-sm" onclick="openSOSModal()">
+        <i class="fa-solid fa-truck-medical"></i> Emergency SOS
+      </button>
+
+      <button class="btn btn-secondary btn-sm" onclick="toggleNotifications()" style="position: relative;">
+        <i class="fa-solid fa-bell"></i>
+        <span class="badge-count" id="notif-badge">3</span>
+      </button>
+
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('user-login')" id="auth-btn">
+        <i class="fa-solid fa-user-gear"></i> Login / Register
+      </button>
+    </div>
+  </header>
+
+  <div class="app-container">
+    <!-- Collapsible Sidebar Navigation -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-heading">Core Navigation</div>
+      <div class="sidebar-menu">
+        <div class="sidebar-item active" onclick="switchView('view-landing')" id="side-landing">
+          <i class="fa-solid fa-house"></i>
+          <span class="sidebar-text">Landing Page</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-dashboard')" id="side-dashboard">
+          <i class="fa-solid fa-chart-line"></i>
+          <span class="sidebar-text">User Dashboard</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-disease-prediction')" id="side-prediction">
+          <i class="fa-solid fa-stethoscope"></i>
+          <span class="sidebar-text">AI Symptom Predictor</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-hospital-locator')" id="side-hospitals">
+          <i class="fa-solid fa-hospital"></i>
+          <span class="sidebar-text">Find Hospitals</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-doctor-appointment')" id="side-doctors">
+          <i class="fa-solid fa-user-doctor"></i>
+          <span class="sidebar-text">Doctor Appointments</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-ambulance-module')" id="side-ambulance">
+          <i class="fa-solid fa-truck-medical"></i>
+          <span class="sidebar-text">Ambulance Services</span>
+        </div>
+      </div>
+
+      <div class="sidebar-heading">Pharmacy & Delivery</div>
+      <div class="sidebar-menu">
+        <div class="sidebar-item" onclick="switchView('view-pharmacy-locator')" id="side-pharmacy">
+          <i class="fa-solid fa-store"></i>
+          <span class="sidebar-text">Pharmacy Locator</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-upload-prescription')" id="side-upload-rx">
+          <i class="fa-solid fa-file-prescription"></i>
+          <span class="sidebar-text">Upload Prescription</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-medicine-cart')" id="side-cart">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span class="sidebar-text">Medicine Cart</span>
+          <span class="badge-count" id="cart-badge-count">2</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-delivery-tracking')" id="side-delivery">
+          <i class="fa-solid fa-truck-fast"></i>
+          <span class="sidebar-text">Delivery Tracking</span>
+        </div>
+      </div>
+
+      <div class="sidebar-heading">Portals & Profile</div>
+      <div class="sidebar-menu">
+        <div class="sidebar-item" onclick="switchView('view-profile')" id="side-profile">
+          <i class="fa-solid fa-id-card"></i>
+          <span class="sidebar-text">My Health Profile</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-pharmacy-dashboard')" id="side-pharmacy-dash">
+          <i class="fa-solid fa-prescription-bottle-medical"></i>
+          <span class="sidebar-text">Pharmacy Dashboard</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-hospital-dashboard')" id="side-hospital-dash">
+          <i class="fa-solid fa-hospital-user"></i>
+          <span class="sidebar-text">Hospital Dashboard</span>
+        </div>
+        <div class="sidebar-item" onclick="switchView('view-admin-dashboard')" id="side-admin-dash">
+          <i class="fa-solid fa-user-shield"></i>
+          <span class="sidebar-text">Admin Portal</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+
+      <!-- 1. LANDING PAGE VIEW -->
+      <section id="view-landing" class="view-section active">
+        <div class="hero-section">
+          <div class="hero-content">
+            <div class="hero-badge">
+              <i class="fa-solid fa-shield-halved"></i> Next-Gen Smart Healthcare Platform
+            </div>
+            <h1 class="hero-title">Your Complete <span>Digital Health Bridge</span> to Wellness</h1>
+            <p class="hero-subtitle">
+              Seamlessly connect with top hospitals, verified doctors, AI-powered disease diagnostics, and 24/7 smart prescription home delivery in one place.
+            </p>
+            <div class="hero-actions">
+              <button class="btn btn-primary btn-lg" onclick="switchView('view-disease-prediction')">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Symptom Check
+              </button>
+              <button class="btn btn-outline btn-lg" onclick="switchView('view-pharmacy-locator')">
+                <i class="fa-solid fa-capsules"></i> Order Medicines
+              </button>
+            </div>
+          </div>
+          <div class="hero-illustration">
+            <svg width="450" height="320" viewBox="0 0 450 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="450" height="320" rx="20" fill="#E3F2FD"/>
+              <circle cx="225" cy="160" r="110" fill="#BBDEFB" opacity="0.6"/>
+              <path d="M170 160 H280 M225 105 V215" stroke="#1E88E5" stroke-width="24" stroke-linecap="round"/>
+              <circle cx="225" cy="160" r="30" fill="#FFFFFF"/>
+              <path d="M210 160 L220 170 L240 150" stroke="#26C6DA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Features Grid -->
+        <h2 style="text-align: center; margin-bottom: 2rem;">Platform Highlights & Features</h2>
+        <div class="grid-4" style="margin-bottom: 3rem;">
+          <div class="card feature-card" onclick="switchView('view-disease-prediction')">
+            <div class="feature-icon"><i class="fa-solid fa-brain"></i></div>
+            <h3>AI Disease Diagnostics</h3>
+            <p>Smart ML algorithm predicting health risks with high accuracy based on multi-symptom inputs.</p>
+          </div>
+          <div class="card feature-card" onclick="switchView('view-hospital-locator')">
+            <div class="feature-icon"><i class="fa-solid fa-hospital-symbol"></i></div>
+            <h3>Hospital & Bed Finder</h3>
+            <p>Real-time updates on available ICU beds, emergency services, and specialist doctors near you.</p>
+          </div>
+          <div class="card feature-card" onclick="switchView('view-upload-prescription')">
+            <div class="feature-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+            <h3>Prescription Home Delivery</h3>
+            <p>Drag-and-drop prescription scan with AI verification and 30-minute express courier delivery.</p>
+          </div>
+          <div class="card feature-card" onclick="switchView('view-ambulance-module')">
+            <div class="feature-icon"><i class="fa-solid fa-truck-medical"></i></div>
+            <h3>108 Emergency Ambulance</h3>
+            <p>Live GPS tracking, instant driver dispatch, and direct hospital route synchronization.</p>
+          </div>
+        </div>
+
+        <!-- Live Statistics Counter -->
+        <div class="stats-bar">
+          <div class="stat-item">
+            <div class="stat-number">150,000+</div>
+            <div class="stat-label">Happy Patients Served</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">1,200+</div>
+            <div class="stat-label">Network Hospitals</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">4,500+</div>
+            <div class="stat-label">Partner Pharmacies</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">99.4%</div>
+            <div class="stat-label">AI Accuracy Rate</div>
+          </div>
+        </div>
+
+        <!-- Testimonials & FAQ Accordion -->
+        <div class="grid-2" style="margin-top: 3rem;">
+          <div class="card">
+            <h3><i class="fa-solid fa-quote-left" style="color: var(--primary);"></i> Patient Testimonials</h3>
+            <div style="margin-top: 1rem;">
+              <p style="font-style: italic;">"Swastya Setu saved vital time during an emergency. The ambulance tracking was pinpoint accurate and the hospital bed was pre-booked before arrival!"</p>
+              <h4 style="margin-top: 0.8rem;">- Dr. Ananya Sharma, Senior Cardiologist</h4>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3><i class="fa-solid fa-circle-question" style="color: var(--accent);"></i> Frequently Asked Questions</h3>
+            <div style="margin-top: 1rem;">
+              <p><strong>Q: How does prescription verification work?</strong></p>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">Upload your prescription PDF or photo. Our AI OCR scans medicine names, doctor registration, and auto-checks inventory across nearby verified pharmacies.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--text-muted);">
+          <div class="grid-4">
+            <div>
+              <h4 style="color: var(--text-main);">Swastya Setu Platform</h4>
+              <p style="font-size: 0.85rem; margin-top: 0.5rem;">Empowering healthcare accessibility through technology.</p>
+            </div>
+            <div>
+              <h4 style="color: var(--text-main);">Quick Links</h4>
+              <ul style="font-size: 0.85rem; margin-top: 0.5rem;">
+                <li><a onclick="switchView('view-disease-prediction')">AI Diagnostics</a></li>
+                <li><a onclick="switchView('view-hospital-locator')">Find Hospitals</a></li>
+                <li><a onclick="switchView('view-pharmacy-locator')">Order Medicine</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="color: var(--text-main);">Emergency Contacts</h4>
+              <p style="font-size: 0.85rem; margin-top: 0.5rem;">National Helpline: 112<br>Ambulance: 108<br>Disaster Helpline: 1070</p>
+            </div>
+            <div>
+              <h4 style="color: var(--text-main);">Legal</h4>
+              <p style="font-size: 0.85rem; margin-top: 0.5rem;">Privacy Policy | Terms of Service | NABH Certified</p>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- 2. USER DASHBOARD VIEW -->
+      <section id="view-dashboard" class="view-section">
+        <div class="welcome-banner">
+          <div>
+            <h2>Welcome back, Rajesh Kumar! 👋</h2>
+            <p>Your Health Profile Status: <strong style="color: #E0F7FA;">88% Complete (Optimal)</strong></p>
+          </div>
+          <button class="btn btn-outline" style="color: white; border-color: white;" onclick="switchView('view-profile')">
+            <i class="fa-solid fa-id-card"></i> View Full Profile
+          </button>
+        </div>
+
+        <!-- Health Summary Cards -->
+        <h3 style="margin-bottom: 1rem;">Vitals & Health Summary</h3>
+        <div class="grid-4" style="margin-bottom: 2rem;">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);"><i class="fa-solid fa-heart-pulse" style="color: #E53935;"></i> Heart Rate</span>
+              <span class="badge-card badge-open">Normal</span>
+            </div>
+            <h2 style="margin-top: 0.5rem;">72 <span style="font-size: 0.9rem; color: var(--text-muted);">BPM</span></h2>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);"><i class="fa-solid fa-droplet" style="color: var(--primary);"></i> Blood Pressure</span>
+              <span class="badge-card badge-open">Optimal</span>
+            </div>
+            <h2 style="margin-top: 0.5rem;">120/80 <span style="font-size: 0.9rem; color: var(--text-muted);">mmHg</span></h2>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);"><i class="fa-solid fa-wind" style="color: var(--accent);"></i> Oxygen Saturation</span>
+              <span class="badge-card badge-open">Normal</span>
+            </div>
+            <h2 style="margin-top: 0.5rem;">98% <span style="font-size: 0.9rem; color: var(--text-muted);">SpO2</span></h2>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);"><i class="fa-solid fa-weight-scale" style="color: var(--warning);"></i> BMI Index</span>
+              <span class="badge-card badge-govt">23.4</span>
+            </div>
+            <h2 style="margin-top: 0.5rem;">Normal <span style="font-size: 0.9rem; color: var(--text-muted);">71 kg</span></h2>
+          </div>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <h3 style="margin-bottom: 1rem;">Quick Medical Actions</h3>
+        <div class="grid-4" style="margin-bottom: 2rem;">
+          <div class="card quick-action-card" onclick="switchView('view-disease-prediction')">
+            <i class="fa-solid fa-stethoscope"></i>
+            <h4>Predict Disease</h4>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Symptom checker</span>
+          </div>
+          <div class="card quick-action-card" onclick="switchView('view-hospital-locator')">
+            <i class="fa-solid fa-hospital"></i>
+            <h4>Search Hospitals</h4>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Live bed availability</span>
+          </div>
+          <div class="card quick-action-card" onclick="switchView('view-pharmacy-locator')">
+            <i class="fa-solid fa-store"></i>
+            <h4>Search Pharmacies</h4>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Get 20% discount</span>
+          </div>
+          <div class="card quick-action-card" onclick="switchView('view-upload-prescription')">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <h4>Upload Rx</h4>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">AI Order Match</span>
+          </div>
+        </div>
+
+        <!-- Recent Activities & Upcoming Appointments -->
+        <div class="grid-2">
+          <div class="card">
+            <h3><i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Upcoming Appointments</h3>
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--primary-light); border-radius: var(--radius-md);">
+              <div style="display: flex; justify-content: space-between;">
+                <strong>Dr. Priya Verma (Cardiologist)</strong>
+                <span class="badge-card badge-open">Tomorrow, 10:30 AM</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Apollo Multi-specialty Hospital, Desk #4</p>
+              <div style="margin-top: 10px; display: flex; gap: 8px;">
+                <button class="btn btn-primary btn-sm"><i class="fa-solid fa-video"></i> Join Video Call</button>
+                <button class="btn btn-outline btn-sm">Reschedule</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i> Recent Activity Timeline</h3>
+            <div class="timeline" style="margin-top: 1rem;">
+              <div class="timeline-step completed">
+                <strong>Medicine Order Delivered (#ORD-9482)</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Paracetamol 500mg, Amoxicillin - Yesterday 4:15 PM</p>
+              </div>
+              <div class="timeline-step completed">
+                <strong>Blood Test Report Uploaded</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Metropolis Diagnostics - 4 Days Ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. AI DISEASE PREDICTION VIEW -->
+      <section id="view-disease-prediction" class="view-section">
+        <h2><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> AI Health Diagnostics & Symptom Checker</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Select your current symptoms below or search to get instant machine learning predictions, specialist recommendations, and medication suggestions.</p>
+
+        <div class="card" style="margin-bottom: 2rem;">
+          <div class="form-group">
+            <label class="form-label">Search & Filter Symptoms</label>
+            <input type="text" class="form-input" id="symptom-search" placeholder="Type symptom e.g. Fever, Cough, Chest Pain..." onkeyup="filterSymptomChips()">
+          </div>
+
+          <label class="form-label">Common Symptoms (Click to select/deselect)</label>
+          <div class="symptom-chip-container" id="symptom-chip-box">
+            <!-- Dynamic Chips JS -->
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+            <span id="selected-symptom-count" style="font-weight: 600; color: var(--primary);">0 symptoms selected</span>
+            <button class="btn btn-primary" onclick="runDiseasePrediction()">
+              <i class="fa-solid fa-microchip"></i> Predict Disease Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Prediction Result Container -->
+        <div class="card" id="prediction-result-card" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span class="badge-card badge-urgent" id="pred-severity">High Match</span>
+              <h2 id="pred-disease-title" style="margin-top: 0.5rem;">Acute Respiratory Bronchitis</h2>
+              <p id="pred-disease-desc" style="color: var(--text-muted); margin-top: 0.5rem;">Lower respiratory tract inflammation causing cough and chest discomfort.</p>
+            </div>
+            <div style="text-align: right;">
+              <h2 style="color: var(--primary);" id="pred-confidence-text">92%</h2>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">AI Confidence Score</span>
+            </div>
+          </div>
+
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="pred-confidence-bar" style="width: 92%;"></div>
+          </div>
+
+          <div class="grid-3" style="margin-top: 1.5rem;">
+            <div>
+              <h4><i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Recommended Specialist</h4>
+              <p id="pred-specialist" style="font-weight: 600;">Pulmonologist / General Physician</p>
+            </div>
+            <div>
+              <h4><i class="fa-solid fa-prescription-bottle" style="color: var(--accent);"></i> Suggested OTC Medicines</h4>
+              <p id="pred-medicines">Azithromycin 500mg, Cough Syrup</p>
+            </div>
+            <div>
+              <h4><i class="fa-solid fa-notes-medical"></i> Precautions & Diet</h4>
+              <p id="pred-precautions">Warm saline gargle, Hydration, Rest</p>
+            </div>
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="switchView('view-doctor-appointment')">
+              <i class="fa-solid fa-calendar-plus"></i> Book Specialist Appointment
+            </button>
+            <button class="btn btn-secondary" onclick="switchView('view-pharmacy-locator')">
+              <i class="fa-solid fa-cart-shopping"></i> Find Pharmacies
+            </button>
+            <button class="btn btn-outline" onclick="window.print()">
+              <i class="fa-solid fa-download"></i> Print / Save Report
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. HOSPITAL LOCATOR VIEW -->
+      <section id="view-hospital-locator" class="view-section">
+        <h2><i class="fa-solid fa-hospital" style="color: var(--primary);"></i> Smart Hospital & Bed Locator</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Find hospitals and clinics near you using OpenStreetMap data. Call ahead to confirm beds and services.</p>
+
+        <!-- Search & Filter Controls -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="grid-3">
+            <div>
+              <label class="form-label">Search Hospital Name / City</label>
+              <input type="text" class="form-input" id="hosp-search-input" placeholder="e.g. Apollo, AIIMS, Delhi..." onkeyup="filterHospitals()">
+            </div>
+            <div>
+              <label class="form-label">Specialization</label>
+              <select class="form-select" id="hosp-spec-select" onchange="filterHospitals()">
+                <option value="all">All Specializations</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Neurology">Neurology</option>
+                <option value="Orthopedics">Orthopedics</option>
+                <option value="Pediatrics">Pediatrics</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Facility Type</label>
+              <select class="form-select" id="hosp-type-select" onchange="filterHospitals()">
+                <option value="all">Government & Private</option>
+                <option value="Govt">Government</option>
+                <option value="Private">Private</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map Placeholder -->
+        <div class="map-placeholder" style="margin-bottom: 2rem;">
+          <div class="map-overlay-controls">
+            <button class="btn btn-sm btn-primary"><i class="fa-solid fa-location-crosshairs"></i> Use Current GPS</button>
+            <button class="btn btn-sm btn-secondary"><i class="fa-solid fa-layer-group"></i> Toggle Satellite View</button>
+          </div>
+          <!-- Interactive Map Pins -->
+          <div class="map-pin" style="top: 35%; left: 45%;" onclick="showToast('Selected: Apollo Hospital - 14 ICU Beds Available', 'info')">
+            <span class="map-pin-label">Apollo (14 Beds)</span>
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div class="map-pin" style="top: 60%; left: 70%;" onclick="showToast('Selected: City Care Clinic - 4 Beds Available', 'info')">
+            <span class="map-pin-label">City Care (4 Beds)</span>
+            <i class="fa-solid fa-location-dot" style="color: var(--accent);"></i>
+          </div>
+          <span style="color: #0284C7; font-weight: 600; text-align: center;">
+            <i class="fa-solid fa-map-location-dot" style="font-size: 3rem; opacity: 0.5;"></i><br>
+            Interactive Live Hospital GPS Radar Map
+          </span>
+        </div>
+
+        <!-- Hospital Cards Container -->
+        <div id="hosp-map" style="height:320px;border-radius:14px;margin-bottom:1.5rem"></div>
+        <div class="grid-3" id="hospitals-card-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- 5. DOCTOR APPOINTMENTS VIEW -->
+      <section id="view-doctor-appointment" class="view-section">
+        <h2><i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Book Specialist Doctor Consultations</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Choose experienced healthcare professionals for in-clinic visits or video consultations.</p>
+
+        <div class="grid-3" id="doctors-card-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- 6. AMBULANCE MODULE VIEW -->
+      <section id="view-ambulance-module" class="view-section">
+        <div class="welcome-banner" style="background: linear-gradient(135deg, #E53935, #D32F2F);">
+          <div>
+            <h2><i class="fa-solid fa-truck-medical"></i> Emergency 108 Ambulance SOS Dispatch</h2>
+            <p>One-click instant dispatch connects with nearest Advanced Life Support (ALS) vehicle.</p>
+          </div>
+          <button class="btn btn-lg btn-outline" style="color: white; border-color: white;" onclick="openSOSModal()">
+            <i class="fa-solid fa-bell"></i> Trigger Rapid Dispatch
+          </button>
+        </div>
+
+        <!-- Live Ambulance Map Placeholder -->
+        <div class="map-placeholder" style="margin-bottom: 2rem; border-color: var(--danger);">
+          <div class="map-pin" style="top: 50%; left: 50%;">
+            <span class="map-pin-label" style="background: var(--danger); color: white;">Ambulance #MH-02-EX (2.4 km away)</span>
+            <i class="fa-solid fa-truck-medical" style="color: var(--danger); font-size: 2.5rem;"></i>
+          </div>
+          <span style="color: #991B1B; font-weight: 600;">
+            <i class="fa-solid fa-satellite-dish" style="font-size: 3rem; opacity: 0.5;"></i><br>
+            Active Ambulance Live Tracking Radar (ETA: 8 Mins)
+          </span>
+        </div>
+
+        <h3 style="margin-bottom: 1rem;">Nearby Active Ambulances</h3>
+        <div class="grid-3">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between;">
+              <span class="badge-card badge-urgent">ALS Unit</span>
+              <span style="font-weight: 600; color: var(--success);">Available</span>
+            </div>
+            <h3 style="margin-top: 0.5rem;">Apex Cardiac Ambulance</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Driver: Ramesh Kumar (★ 4.9)</p>
+            <p style="font-weight: 600; margin-top: 0.5rem;"><i class="fa-solid fa-clock"></i> ETA: 6 Mins (1.8 km)</p>
+            <div style="margin-top: 1rem; display: flex; gap: 8px;">
+              <button class="btn btn-danger btn-sm" onclick="location.href='tel:108'"><i class="fa-solid fa-phone"></i> Call Driver</button>
+              <button class="btn btn-outline btn-sm" onclick="showToast('Dispatch Confirmed! Vehicle enroute.', 'success')">Dispatch</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. PHARMACY LOCATOR VIEW -->
+      <section id="view-pharmacy-locator" class="view-section">
+        <h2><i class="fa-solid fa-store" style="color: var(--primary);"></i> Smart Pharmacy Finder & Medicine Delivery</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Find pharmacies near you. Call to confirm stock and delivery.</p>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="grid-4">
+            <input type="text" class="form-input" id="pharmacy-search" placeholder="Search pharmacy name..." onkeyup="filterPharmacies()">
+            <select class="form-select" id="pharmacy-filter-type" onchange="filterPharmacies()">
+              <option value="all">All Pharmacies</option>
+              <option value="24x7">24x7 Open</option>
+              <option value="delivery">Express Home Delivery</option>
+            </select>
+            <button class="btn btn-primary" onclick="switchView('view-upload-prescription')">
+              <i class="fa-solid fa-file-arrow-up"></i> Upload Rx for Auto Match
+            </button>
+            <button class="btn btn-secondary" onclick="switchView('view-medicine-cart')">
+              <i class="fa-solid fa-cart-shopping"></i> View Cart (<span id="cart-count-btn">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid-3" id="pharmacy-card-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- 8. UPLOAD PRESCRIPTION VIEW -->
+      <section id="view-upload-prescription" class="view-section">
+        <h2><i class="fa-solid fa-file-prescription" style="color: var(--primary);"></i> Upload Doctor Prescription</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload your doctor's prescription (Image or PDF) for AI OCR extraction and medicine price estimation.</p>
+
+        <div class="card">
+          <div class="upload-dropzone" onclick="triggerFileInput()">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 1rem;"></i>
+            <h3>Drag & Drop Prescription File Here</h3>
+            <p style="color: var(--text-muted); margin-top: 0.5rem;">Supports JPG, PNG, PDF (Max size: 10MB)</p>
+            <input type="file" id="rx-file-input" style="display: none;" onchange="handleRxFileSelect(event)">
+          </div>
+
+          <div class="upload-preview" id="rx-preview-box" style="display: none;">
+            <i class="fa-solid fa-file-pdf" style="font-size: 2.5rem; color: var(--danger);"></i>
+            <div style="flex: 1;">
+              <strong id="rx-file-name">Prescription_Dr_Sharma.pdf</strong>
+              <p style="font-size: 0.8rem; color: var(--text-muted);" id="rx-file-size">1.4 MB • Uploaded</p>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="removeRxFile()"><i class="fa-solid fa-trash"></i> Remove</button>
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+            <button class="btn btn-outline" onclick="switchView('view-pharmacy-locator')">Cancel</button>
+            <button class="btn btn-primary" onclick="simulateAIVerification()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Process & Scan Prescription
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. AI PRESCRIPTION VERIFICATION VIEW -->
+      <section id="view-prescription-verification" class="view-section">
+        <div class="card" style="border-top: 5px solid var(--success);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span class="badge-card badge-open"><i class="fa-solid fa-circle-check"></i> AI Prescription Verified</span>
+              <h2 style="margin-top: 0.5rem;">Verification Summary & Price Breakdown</h2>
+            </div>
+            <span style="font-weight: 600; color: var(--text-muted);">Rx ID: #RX-2026-9481</span>
+          </div>
+
+          <div class="grid-3" style="margin-top: 1.5rem; background: var(--bg); padding: 1rem; border-radius: var(--radius-md);">
+            <div><strong>Doctor Name:</strong> Dr. R. K. Saxena (MD)</div>
+            <div><strong>Prescription Date:</strong> Aug 04, 2026</div>
+            <div><strong>Expiry Status:</strong> <span style="color: var(--success); font-weight: 600;">Valid (Active)</span></div>
+          </div>
+
+          <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Extracted Medicine Items</h3>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted);">
+                  <th style="padding: 10px;">Medicine Name</th>
+                  <th style="padding: 10px;">Dosage</th>
+                  <th style="padding: 10px;">Stock Status</th>
+                  <th style="padding: 10px;">Price</th>
+                  <th style="padding: 10px;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 12px;"><strong>Amoxicillin 500mg (Cap)</strong></td>
+                  <td>10 Days (1-0-1)</td>
+                  <td><span class="badge-card badge-open">In Stock</span></td>
+                  <td>₹120.00</td>
+                  <td><button class="btn btn-sm btn-secondary" onclick="addToCart('Amoxicillin 500mg', 120, true)"><i class="fa-solid fa-plus"></i> Add</button></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 12px;"><strong>Paracetamol 650mg (Tab)</strong></td>
+                  <td>5 Days (SOS)</td>
+                  <td><span class="badge-card badge-open">In Stock</span></td>
+                  <td>₹45.00</td>
+                  <td><button class="btn btn-sm btn-secondary" onclick="addToCart('Paracetamol 650mg', 45)"><i class="fa-solid fa-plus"></i> Add</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <p style="font-size: 0.9rem; color: var(--text-muted);">Estimated Delivery Time: <strong>35 Mins</strong></p>
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="switchView('view-medicine-cart')">
+              <i class="fa-solid fa-arrow-right"></i> Proceed to Medicine Cart
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. MEDICINE CART VIEW -->
+      <section id="view-medicine-cart" class="view-section">
+        <h2><i class="fa-solid fa-cart-shopping" style="color: var(--primary);"></i> Medicine Checkout Cart</h2>
+
+        <div class="grid-3" style="margin-top: 1.5rem;">
+          <div class="card" style="grid-column: span 2;">
+            <h3>Order Items</h3>
+            <div id="cart-items-container">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Bill Summary</h3>
+            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; justify-content: space-between;"><span>Item Subtotal</span><span id="cart-subtotal">₹165.00</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>Express Delivery Charges</span><span id="cart-delivery">₹25.00</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>GST (12%)</span><span id="cart-gst">₹19.80</span></div>
+              <hr style="border: 0; border-top: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 700;">
+                <span>Total Amount payable</span><span style="color: var(--primary);" id="cart-total">₹209.80</span>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 1.5rem;">
+              <label class="form-label">Apply Promo Code</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" class="form-input" id="coupon-code" placeholder="e.g. SWASTYA50">
+                <button class="btn btn-secondary" onclick="applyCoupon()">Apply</button>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" style="width: 100%; margin-top: 1rem;" onclick="processCheckout()">
+              <i class="fa-solid fa-lock"></i> Confirm & Pay Now
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11. DELIVERY TRACKING VIEW -->
+      <section id="view-delivery-tracking" class="view-section">
+        <h2><i class="fa-solid fa-truck-fast" style="color: var(--primary);"></i> Live Order Delivery Tracking</h2>
+
+        <div class="grid-3" style="margin-top: 1.5rem;">
+          <div class="card">
+            <h3>Order Status Timeline</h3>
+            <div class="timeline">
+              <div class="timeline-step completed">
+                <strong>Prescription Uploaded & Verified</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">10:15 AM</p>
+              </div>
+              <div class="timeline-step completed">
+                <strong>Order Packed at Apollo Pharmacy</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">10:25 AM</p>
+              </div>
+              <div class="timeline-step active">
+                <strong>Out for Home Delivery</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Agent assigned & in transit</p>
+              </div>
+              <div class="timeline-step">
+                <strong>Delivered to Doorstep</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">ETA: 10:45 AM</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column: span 2;">
+            <div class="map-placeholder" style="height: 280px; margin-bottom: 1rem;">
+              <div class="map-pin" style="top: 45%; left: 60%;">
+                <span class="map-pin-label" style="background: var(--primary); color: white;">Delivery Partner: Vikram</span>
+                <i class="fa-solid fa-motorcycle" style="color: var(--primary); font-size: 2rem;"></i>
+              </div>
+              <span style="color: var(--primary); font-weight: 600;">Live Delivery GPS Route</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg); padding: 1rem; border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-circle-user" style="font-size: 2.5rem; color: var(--text-muted);"></i>
+                <div>
+                  <strong>Vikram Singh (Courier)</strong>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Vehicle: Hero Splendor (MH-12-AB-9812)</p>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="showToast('Live tracking needs backend (demo)', 'info')">
+                <i class="fa-solid fa-phone"></i> Call Delivery Agent
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12. USER PROFILE VIEW -->
+      <section id="view-profile" class="view-section">
+        <h2><i class="fa-solid fa-id-card" style="color: var(--primary);"></i> Health Passport & User Profile</h2>
+
+        <div class="grid-3" style="margin-top: 1.5rem;">
+          <div class="card">
+            <div style="text-align: center;">
+              <i class="fa-solid fa-circle-user" style="font-size: 5rem; color: var(--primary);"></i>
+              <h3 style="margin-top: 0.5rem;">Rajesh Kumar</h3>
+              <span class="badge-card badge-open">AB Positive (+B)</span>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Member since Jan 2025</p>
+            </div>
+            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border-color);">
+            <p><strong>Age / Gender:</strong> 34 Yrs / Male</p>
+            <p><strong>Emergency Contact:</strong> +91 98765 43210 (Wife)</p>
+            <p><strong>Insurance Policy:</strong> Star Health (#SH-90812)</p>
+          </div>
+
+          <div class="card" style="grid-column: span 2;">
+            <h3>Medical Records & Past Reports</h3>
+            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; justify-content: space-between; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <div>
+                  <strong>Lipid Profile Test</strong>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Metropolis Diagnostics • 12 May 2026</p>
+                </div>
+                <button class="btn btn-sm btn-outline"><i class="fa-solid fa-download"></i> View PDF</button>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <div>
+                  <strong>Cardiology ECG Report</strong>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Apollo Hospital • 04 Feb 2026</p>
+                </div>
+                <button class="btn btn-sm btn-outline"><i class="fa-solid fa-download"></i> View PDF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13. ADMIN DASHBOARD VIEW -->
+      <section id="view-admin-dashboard" class="view-section">
+        <h2><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> Swastya Setu Master Admin Control Portal</h2>
+
+        <div class="grid-4" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+          <div class="card">
+            <span>Total Registered Users</span>
+            <h2>142,980</h2>
+          </div>
+          <div class="card">
+            <span>Partner Hospitals</span>
+            <h2>1,240</h2>
+          </div>
+          <div class="card">
+            <span>Active Ambulances</span>
+            <h2>850</h2>
+          </div>
+          <div class="card">
+            <span>Total Monthly Revenue</span>
+            <h2 style="color: var(--success);">₹24.8 Lakhs</h2>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Platform Usage Metrics (SVG Analytics)</h3>
+            <div class="chart-container" style="display: flex; align-items: flex-end; gap: 15px; padding-top: 20px;">
+              <div style="height: 40%; width: 14%; background: var(--primary); border-radius: 4px;"></div>
+              <div style="height: 65%; width: 14%; background: var(--secondary); border-radius: 4px;"></div>
+              <div style="height: 85%; width: 14%; background: var(--accent); border-radius: 4px;"></div>
+              <div style="height: 50%; width: 14%; background: var(--primary); border-radius: 4px;"></div>
+              <div style="height: 95%; width: 14%; background: var(--secondary); border-radius: 4px;"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Pending Partner Registrations</h3>
+            <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>MaxCare Multispecialty Hospital</strong>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">License #NABH-9481</p>
+                </div>
+                <div>
+                  <button class="btn btn-sm btn-primary" onclick="showToast('Hospital Approved!', 'success')">Approve</button>
+                  <button class="btn btn-sm btn-danger" onclick="showToast('Registration Rejected', 'danger')">Reject</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 14. HOSPITAL DASHBOARD VIEW -->
+      <section id="view-hospital-dashboard" class="view-section">
+        <h2><i class="fa-solid fa-hospital-user" style="color: var(--primary);"></i> Hospital Management Panel (Apollo Clinic)</h2>
+
+        <div class="grid-4" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+          <div class="card">
+            <span>ICU Beds Available</span>
+            <h2 style="color: var(--danger);">4 / 25</h2>
+          </div>
+          <div class="card">
+            <span>General Beds Available</span>
+            <h2>18 / 100</h2>
+          </div>
+          <div class="card">
+            <span>Doctors On Duty</span>
+            <h2>12 Doctors</h2>
+          </div>
+          <div class="card">
+            <span>Emergency Queue</span>
+            <h2 style="color: var(--warning);">3 Pending</h2>
+          </div>
+        </div>
+      </section>
+
+      <!-- 15. PHARMACY DASHBOARD VIEW -->
+      <section id="view-pharmacy-dashboard" class="view-section">
+        <h2><i class="fa-solid fa-prescription-bottle-medical" style="color: var(--primary);"></i> Pharmacy Owner & Order Fulfillment Dashboard</h2>
+
+        <div class="grid-3" style="margin-top: 1.5rem;">
+          <div class="card">
+            <span>Pending Prescription Approvals</span>
+            <h2 style="color: var(--warning);">5 Orders</h2>
+          </div>
+          <div class="card">
+            <span>Dispatched Today</span>
+            <h2 style="color: var(--success);">48 Shipments</h2>
+          </div>
+          <div class="card">
+            <span>Low Stock Items Alert</span>
+            <h2 style="color: var(--danger);">3 Medicines</h2>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 2rem;">
+          <h3>Incoming Prescription Verification Queue</h3>
+          <div style="margin-top: 1rem; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border-color);">
+                  <th style="padding: 10px;">Order ID</th>
+                  <th>Customer</th>
+                  <th>Prescription File</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 10px;">#ORD-9412</td>
+                  <td>Rajesh Kumar</td>
+                  <td><a href="#" style="color: var(--primary); text-decoration: underline;">View_Rx_Scan.pdf</a></td>
+                  <td><span class="badge-card badge-urgent">Pending Approval</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-primary" onclick="showToast('Prescription Approved!', 'success')">Approve</button>
+                    <button class="btn btn-sm btn-danger" onclick="showToast('Prescription Rejected', 'danger')">Reject</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- FLOATING EMERGENCY SOS BUTTON -->
+  <button class="floating-sos" onclick="openSOSModal()" title="Emergency SOS Rapid Dispatch">
+    <i class="fa-solid fa-truck-medical" style="font-size: 1.8rem;"></i>
+  </button>
+
+  <!-- EMERGENCY SOS MODAL DIALOG -->
+  <div class="modal-backdrop" id="sos-modal">
+    <div class="modal-content" style="border-top: 5px solid var(--danger);">
+      <div class="modal-header">
+        <h2 style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Emergency SOS Ambulance Dispatch</h2>
+        <button class="modal-close" onclick="closeSOSModal()">&times;</button>
+      </div>
+      <p style="color: var(--text-muted);">Confirm to dial 108 (ambulance). Your location link is copied so you can share it. Other numbers: 112 (all emergencies), 102 (mother & child), 100 (police).</p>
+      
+      <div style="background: var(--danger-light); padding: 1rem; border-radius: var(--radius-md); margin: 1.5rem 0;">
+        <strong>Your Shared GPS Location:</strong>
+        <p id="sos-loc" style="font-size: 0.9rem; color: var(--text-main);">Detecting location…</p>
+      </div>
+
+      <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        <button class="btn btn-outline" onclick="closeSOSModal()">Cancel</button>
+        <button class="btn btn-danger btn-lg" onclick="triggerSOSDispatch()">
+          <i class="fa-solid fa-phone-volume"></i> Call 108 Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MULTI-ROLE AUTH MODAL -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="auth-modal-title">Account Login</h2>
+        <button class="modal-close" onclick="closeAuthModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); pb: 8px;">
+        <button class="btn btn-sm btn-secondary" onclick="switchAuthTab('user')">User</button>
+        <button class="btn btn-sm btn-outline" onclick="switchAuthTab('hospital')">Hospital Partner</button>
+        <button class="btn btn-sm btn-outline" onclick="switchAuthTab('admin')">Admin</button>
+      </div>
+
+      <form onsubmit="handleAuthSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Email / Phone Number</label>
+          <input type="text" class="form-input" placeholder="e.g. rajesh@swastyasetu.in" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+          Sign In to Portal
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS TOAST CONTAINER -->
+  <div class="toast-container" id="toast-box"></div>
+
+  <!-- Application Logic JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

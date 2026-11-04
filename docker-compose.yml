@@ -1,0 +1,8 @@
+services:
+  swastya-setu:
+    build: .
+    container_name: swastya-setu-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
